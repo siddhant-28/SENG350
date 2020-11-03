@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+        <script type="text/javascript" src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</head>
+<!-- Bootstrap core JS-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
+        <!-- Third party plugin JS-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
+<style>
+.grid-container {
+  display: grid;
+  grid-gap: 5px 5px;
+  grid-template-columns: 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px ;
+  grid-template-rows:    50px 50px 50px 50px 50px 50px 50px 50px 50px 50px ;
+
+  padding: 10px;
+}
+
+.blank-space {
+  background-color: rgb(162, 162, 162);
+}
+
+.food-space {
+  background-color: rgb(212, 61, 61);
+  border-radius: 75%;
+}
+
+.snake-head {
+  background-color: #54CF13;
+  padding: 20px;
+  font-size: 30px;
+  text-align: center;
+}
+
+.snake-body {
+  background-color: #329F14;
+}
+
+.snake-body2 {
+  background-color: #e70292;
+}
+
+
+</style>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script>
+<script>
+
+function getQueryParams(qs) {
+    qs = qs.split('+').join(' ');
+
+    var params = {},
+        tokens,
+        re = /[?&]?([^=]+)=([^&]*)/g;
+
+    while (tokens = re.exec(qs)) {
+        params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+    }
+
+    return params;
+}
+
+function updateboard(gameState){
+    let board = "board";
+    for(i = 0; i<=99; i++){
+
+        if((gameState['boardState'][i]) == -1 ){
+            document.getElementById(board.concat(i.toString(10))).className = '';
+            document.getElementById(board.concat(i.toString(10))).className = 'blank-space';
+        }
+        if((gameState['boardState'][i]) == 0 ){
+            document.getElementById(board.concat(i.toString(10))).className = '';
+            document.getElementById(board.concat(i.toString(10))).className = 'food-space';
+        }
+        if((gameState['boardState'][i]) == 1 ){
+            document.getElementById(board.concat(i.toString(10))).className = '';
+            document.getElementById(board.concat(i.toString(10))).className = 'snake-body';
+        }
+        if((gameState['boardState'][i]) == 2 ){
+            document.getElementById(board.concat(i.toString(10))).className = '';
+            document.getElementById(board.concat(i.toString(10))).className = 'snake-body2';
+        }
+
+    }
+
+}
+var gameID  = '';
+var snakeID = '';
+var host    = 1;
+var socket = io.connect('https://' + document.domain + ':' + location.port);
+
+socket.on( 'connect', function(data) {
+
+ });
+
+socket.on( 'startInfo', function(data) {
+    gameID = data['gameID'];
+    snakeID = data['snakeID'];
+    document.getElementById("ModalGameID").innerHTML = gameID;
+    $('#StartGame').modal()
+ });
+socket.on( 'gameInfo', function(data) {
+    if(host == 0) {
+        gameID = data['gameID'];
+        snakeID = data['snakeID'];
+    }
+ });
+
+socket.on( 'boardState', function(data) {
+    updateboard(data);
+ });
+
+socket.on( 'gameOver', function() {
+    socket.disconnect();
+    $('#GameOver').modal()
+ });
+
+socket.on( 'gameReady', function() {
+    document.getElementById("startGameButton").classList.remove("disabled");
+ });
+
+var rightPressed = false;
+var leftPressed = false;
+var upPressed = false;
+var downPressed = false;
+document.addEventListener('keydown', keyDownHandler, false);
+document.addEventListener('keyup', keyUpHandler, false);
+
+function keyDownHandler(event) {
+    if(event.keyCode == 39) {
+        socket.emit('move', {'move': 'R',
+                             'gameID':gameID, 'snakeID':snakeID});
+        rightPressed = true;
+    }
+    else if(event.keyCode == 37) {
+        socket.emit('move', {'move': 'L',
+                             'gameID':gameID, 'snakeID':snakeID});
+        leftPressed = true;
+    }
+    if(event.keyCode == 40) {
+        socket.emit('move', {'move': 'D',
+                             'gameID':gameID, 'snakeID':snakeID});
+    	downPressed = true;
+    }
+    else if(event.keyCode == 38) {
+        socket.emit('move', {'move': 'U',
+                             'gameID':gameID, 'snakeID':snakeID});
+    	upPressed = true;
+    }
+}
+
+function keyUpHandler(event) {
+    if(event.keyCode == 39) {
+        rightPressed = false;
+    }
+    else if(event.keyCode == 37) {
+        leftPressed = false;
+    }
+    if(event.keyCode == 40) {
+    	downPressed = false;
+    }
+    else if(event.keyCode == 38) {
+    	upPressed = false;
+    }
+}
+
+function StartGame(){
+            socket.emit('startGame', {'gameID':gameID});
+}
+
+function JoinGame(){
+     var gameID2 = document.getElementById("JoinGameID").value;
+     gameID = gameID2;
+     socket.emit('joinGame', {'gameID':gameID2});
+}
+
+function onStart(){
+    var query = getQueryParams(document.location.search);
+    host = query['host'];
+    if(host == 1){
+        socket.emit('hostGame');
+    }else{
+        $('#JoinGame').modal()
+
+    }
+
+}
+window.onload = onStart;
+
+</script>
+<div class="modal" tabindex="-1" role="dialog" id="StartGame">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header row justify-content-center">
+          <div class="row justify-content-center">
+        <h5 class="modal-title" id="ModalGameID"></h5>
+               </div>
+      </div>
+      <div class="modal-body row justify-content-center">
+        <button id="startGameButton" type="button" class="btn btn-primary disabled" data-dismiss="modal" onclick="StartGame()" >Start Game</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal" tabindex="-1" role="dialog" id="JoinGame">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header row justify-content-center">
+          <div class="row justify-content-center">
+        <h5 class="modal-title" >Enter The Game Code Below</h5>
+               </div>
+      </div>
+        <form>
+          <div class="form-group">
+            <label for="JoinGameID">Game Code</label>
+            <input  class="form-control" id="JoinGameID" placeholder="Game Code">
+          </div>
+          <button id="JoinGameButton" type="button" class="btn btn-primary" data-dismiss="modal" onclick="JoinGame()" >JoinGame</button>
+        </form>
+      <div class="modal-body row justify-content-center">
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal" tabindex="-1" role="dialog" id="GameOver">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header row justify-content-center">
+        <h5 class="modal-title text-center">GameOver!</h5>
+      </div>
+      <div class="modal-body ">
+          <div class="row justify-content-center">
+        <p >Green is the Champion</p>
+              </div>
+          <div class="row justify-content-center">
+        <a  class="btn btn-secondary p-3 m-3"  href="/">Back</a>
+              </div>
+      </div>
+    </div>
+  </div>
+</div>
+        <header class="masthead">
+            <div class="container d-flex h-80 align-items-center">
+                <div class="mx-auto text-center">
+                    <h1 class="mx-auto my-0 text-uppercase">Snake</h1>
+
+
+    <div class="grid-container">
+        <div id="board0"   class="blank-space"></div>
+        <div id="board1"   class="blank-space"></div>
+        <div id="board2"   class="blank-space"></div>
+        <div id="board3"   class="blank-space"></div>
+        <div id="board4"   class="blank-space"></div>
+        <div id="board5"   class="blank-space"></div>
+        <div id="board6"   class="blank-space"></div>
+        <div id="board7"   class="blank-space"></div>
+        <div id="board8"   class="blank-space"></div>
+        <div id="board9"   class="blank-space"></div>
+        <div id="board10"  class="blank-space"></div>
+        <div id="board11"  class="blank-space"></div>
+        <div id="board12"  class="blank-space"></div>
+        <div id="board13"  class="blank-space"></div>
+        <div id="board14"  class="blank-space"></div>
+        <div id="board15"  class="blank-space"></div>
+        <div id="board16"  class="blank-space"></div>
+        <div id="board17"  class="blank-space"></div>
+        <div id="board18"  class="blank-space"></div>
+        <div id="board19"  class="blank-space"></div>
+        <div id="board20"  class="blank-space"></div>
+        <div id="board21"  class="blank-space"></div>
+        <div id="board22"  class="blank-space"></div>
+        <div id="board23"  class="blank-space"></div>
+        <div id="board24"  class="blank-space"></div>
+        <div id="board25"  class="blank-space"></div>
+        <div id="board26"  class="blank-space"></div>
+        <div id="board27"  class="blank-space"></div>
+        <div id="board28"  class="blank-space"></div>
+        <div id="board29"  class="blank-space"></div>
+        <div id="board30"  class="blank-space"></div>
+        <div id="board31"  class="blank-space"></div>
+        <div id="board32"  class="blank-space"></div>
+        <div id="board33"  class="blank-space"></div>
+        <div id="board34"  class="blank-space"></div>
+        <div id="board35"  class="blank-space"></div>
+        <div id="board36"  class="blank-space"></div>
+        <div id="board37"  class="blank-space"></div>
+        <div id="board38"  class="blank-space"></div>
+        <div id="board39"  class="blank-space"></div>
+        <div id="board40"  class="blank-space"></div>
+        <div id="board41"  class="blank-space"></div>
+        <div id="board42"  class="blank-space"></div>
+        <div id="board43"  class="blank-space"></div>
+        <div id="board44"  class="blank-space"></div>
+        <div id="board45"  class="blank-space"></div>
+        <div id="board46"  class="blank-space"></div>
+        <div id="board47"  class="blank-space"></div>
+        <div id="board48"  class="blank-space"></div>
+        <div id="board49"  class="blank-space"></div>
+        <div id="board50"  class="blank-space"></div>
+        <div id="board51"  class="blank-space"></div>
+        <div id="board52"  class="blank-space"></div>
+        <div id="board53"  class="blank-space"></div>
+        <div id="board54"  class="blank-space"></div>
+        <div id="board55"  class="blank-space"></div>
+        <div id="board56"  class="blank-space"></div>
+        <div id="board57"  class="blank-space"></div>
+        <div id="board58"  class="blank-space"></div>
+        <div id="board59"  class="blank-space"></div>
+        <div id="board60"  class="blank-space"></div>
+        <div id="board61"  class="blank-space"></div>
+        <div id="board62"  class="blank-space"></div>
+        <div id="board63"  class="blank-space"></div>
+        <div id="board64"  class="blank-space"></div>
+        <div id="board65"  class="blank-space"></div>
+        <div id="board66"  class="blank-space"></div>
+        <div id="board67"  class="blank-space"></div>
+        <div id="board68"  class="blank-space"></div>
+        <div id="board69"  class="blank-space"></div>
+        <div id="board70"  class="blank-space"></div>
+        <div id="board71"  class="blank-space"></div>
+        <div id="board72"  class="blank-space"></div>
+        <div id="board73"  class="blank-space"></div>
+        <div id="board74"  class="blank-space"></div>
+        <div id="board75"  class="blank-space"></div>
+        <div id="board76"  class="blank-space"></div>
+        <div id="board77"  class="blank-space"></div>
+        <div id="board78"  class="blank-space"></div>
+        <div id="board79"  class="blank-space"></div>
+        <div id="board80"  class="blank-space"></div>
+        <div id="board81"  class="blank-space"></div>
+        <div id="board82"  class="blank-space"></div>
+        <div id="board83"  class="blank-space"></div>
+        <div id="board84"  class="blank-space"></div>
+        <div id="board85"  class="blank-space"></div>
+        <div id="board86"  class="blank-space"></div>
+        <div id="board87"  class="blank-space"></div>
+        <div id="board88"  class="blank-space"></div>
+        <div id="board89"  class="blank-space"></div>
+        <div id="board90"  class="blank-space"></div>
+        <div id="board91"  class="blank-space"></div>
+        <div id="board92"  class="blank-space"></div>
+        <div id="board93"  class="blank-space"></div>
+        <div id="board94"  class="blank-space"></div>
+        <div id="board95"  class="blank-space"></div>
+        <div id="board96"  class="blank-space"></div>
+        <div id="board97"  class="blank-space"></div>
+        <div id="board98"  class="blank-space"></div>
+        <div id="board99"  class="blank-space"></div>
+    </div>
+</div>
+</div>
+</header>
+</body>
+</html>
