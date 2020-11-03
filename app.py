@@ -1,4 +1,4 @@
-from flask import  Flask, jsonify, make_response, request ,redirect, abort, render_template, g, send_file
+from flask import  Flask,send_from_directory, jsonify, make_response, request ,redirect, abort, render_template, g, send_file
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from random import randrange
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -113,6 +113,14 @@ def hello():
 @app.route('/game')
 def game():
     return render_template('game.html')
+
+@app.route('/stylesheet')
+def stylesheet():
+    return send_from_directory('css', '/static/CSS/main.css')
+
+@app.route('/javascript')
+def javascript():
+    return send_from_directory('js', '/static/js/scripts.js')
 
 if __name__ == '__main__':
     app.static_folder = 'static'
