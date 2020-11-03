@@ -116,6 +116,7 @@ def game():
 
 @app.route('/stylesheet')
 def stylesheet():
+    print('HERE')
     return send_from_directory('css', '/static/CSS/main.css')
 
 @app.route('/javascript')
