@@ -115,4 +115,5 @@ def game():
     return render_template('game.html')
 
 if __name__ == '__main__':
+    app.static_folder = 'static'
     app.run()
