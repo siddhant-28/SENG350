@@ -117,11 +117,11 @@ def game():
 @app.route('/stylesheet')
 def stylesheet():
     print('HERE')
-    return send_from_directory('css', '/static/CSS/main.css')
+    return send_from_directory('/static/CSS/', 'main.css')
 
 @app.route('/javascript')
 def javascript():
-    return send_from_directory('js', '/static/js/scripts.js')
+    return send_from_directory('/static/js/', 'scripts.js')
 
 if __name__ == '__main__':
     app.static_folder = 'static'
